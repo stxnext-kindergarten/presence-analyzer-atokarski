@@ -14,3 +14,5 @@ if __name__ == "__main__":
                                 '..', 'runtime', 'debug.ini')
     logging.config.fileConfig(ini_filename, disable_existing_loggers=False)
     app.run(host='0.0.0.0')
+
+    #commit test
