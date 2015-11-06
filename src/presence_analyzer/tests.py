@@ -4,10 +4,11 @@ Presence analyzer unit tests.
 """
 import os.path
 import json
-import datetime
+from datetime import date, time
 import unittest
 
 from presence_analyzer import main, views, utils
+
 import flask
 
 TEST_DATA_CSV = os.path.join(
@@ -103,12 +104,12 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         data = utils.get_data()
         self.assertIsInstance(data, dict)
         self.assertItemsEqual(data.keys(), [10, 11])
-        sample_date = datetime.date(2013, 9, 10)
+        sample_date = date(2013, 9, 10)
         self.assertIn(sample_date, data[10])
         self.assertItemsEqual(data[10][sample_date].keys(), ['start', 'end'])
         self.assertEqual(
             data[10][sample_date]['start'],
-            datetime.time(9, 39, 5)
+            time(9, 39, 5)
         )
 
     def test_jsonify(self):
@@ -132,12 +133,22 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         # if assigned mimetype is proper
         self.assertEqual(resp.mimetype, u'application/json')
 
+    @classmethod
+    def __secs_count(self, t):
+        """
+        Helper for test_seconds_since_midnight
+        """
+        return t[0] * 3600 + t[1] * 60 + t[2]
+
     def test_seconds_since_midnight(self):
         """
         Test seconds counting
         """
         s_array = [(15, 8, 6), (12, 0, 0), (0, 0, 0), (23, 59, 59)]
-        secs_array = [(x[0] * 3600 + x[1] * 60 + x[2], utils.seconds_since_midnight(datetime.time(*x))) for x in s_array]
+        secs_array = [
+                (self.__secs_count(x), utils.seconds_since_midnight(time(*x)))
+                for x in s_array
+                ]
         print secs_array
         for sa in secs_array:
             self.assertEqual(sa[0], sa[1])
