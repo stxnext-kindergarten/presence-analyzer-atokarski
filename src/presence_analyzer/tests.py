@@ -79,6 +79,18 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertListEqual(data[1], [u'Mon', 24123])
         self.assertListEqual(data[7], [u'Sun', 0])
 
+    def test_api_presence_start_end(self):
+        """
+        Test calculating of averages timepoints
+        """
+        resp = self.client.get('/api/v1/presence_start_end/11')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, 'application/json')
+        data = json.loads(resp.data)
+        self.assertEqual(len(data), 7)
+        self.assertListEqual(data[0], [u'Mon', 33134.0, 57257.0])
+        self.assertListEqual(data[3], [u'Thu', 35602.0, 58586.0])
+
 
 class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
     """
@@ -149,7 +161,6 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
                 (self.__secs_count(x), utils.seconds_since_midnight(time(*x)))
                 for x in s_array
                 ]
-        print secs_array
         for sa in secs_array:
             self.assertEqual(sa[0], sa[1])
 
@@ -169,6 +180,16 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         data = utils.get_data()
         groups = [[24123], [16564], [25321], [22969, 22999], [6426], [], []]
         self.assertListEqual(groups, utils.group_by_weekday(data[user_id]))
+
+    def group_timepoints_by_weekday(self):
+        """
+        test if grouping is right
+        """
+        user_id = 10
+        data = utils.get_data()
+        groups = [[24123], [16564], [25321], [22969, 22999], [6426], [], []]
+        self.assertListEqual(groups,
+                             utils.group_timepoints_by_weekday(data[user_id]))
 
 
 def suite():

@@ -50,23 +50,30 @@ def get_data():
         }
     }
     """
+
     data = {}
-    with open(app.config['DATA_CSV'], 'r') as csvfile:
-        presence_reader = csv.reader(csvfile, delimiter=',')
-        for i, row in enumerate(presence_reader):
-            if len(row) != 4:
-                # ignore header and footer lines
-                continue
 
-            try:
-                user_id = int(row[0])
-                date = datetime.strptime(row[1], '%Y-%m-%d').date()
-                start = datetime.strptime(row[2], '%H:%M:%S').time()
-                end = datetime.strptime(row[3], '%H:%M:%S').time()
-            except (ValueError, TypeError):
-                log.debug('Problem with line %d: ', i, exc_info=True)
+    if hasattr(get_data, 'cached'):
+        data = get_data.cached
+    else:
+        with open(app.config['DATA_CSV'], 'r') as csvfile:
+            presence_reader = csv.reader(csvfile, delimiter=',')
+            for i, row in enumerate(presence_reader):
+                if len(row) != 4:
+                    # ignore header and footer lines
+                    continue
 
-            data.setdefault(user_id, {})[date] = {'start': start, 'end': end}
+                try:
+                    user_id = int(row[0])
+                    date = datetime.strptime(row[1], '%Y-%m-%d').date()
+                    start = datetime.strptime(row[2], '%H:%M:%S').time()
+                    end = datetime.strptime(row[3], '%H:%M:%S').time()
+                except (ValueError, TypeError):
+                    log.debug('Problem with line %d: ', i, exc_info=True)
+
+                data.setdefault(user_id, {})[date] = {'start': start, 'end': end}
+
+        get_data.cached = data
 
     return data
 
@@ -80,6 +87,20 @@ def group_by_weekday(items):
         start = items[date]['start']
         end = items[date]['end']
         result[date.weekday()].append(interval(start, end))
+    return result
+
+
+def group_timepoints_by_weekday(items):
+    """
+    Groups average timepoints (start and finish) of workday
+    """
+    result = [{'start': [], 'end': []} for i in range(7)]
+    for date in items:
+        start = items[date]['start']
+        end = items[date]['end']
+        result[date.weekday()]['start'].append(seconds_since_midnight(start))
+        result[date.weekday()]['end'].append(seconds_since_midnight(end))
+
     return result
 
 
