@@ -4,10 +4,12 @@ Defines views.
 """
 
 import calendar
+
 from flask import redirect, abort
 
 from presence_analyzer.main import app
-from presence_analyzer.utils import jsonify, get_data, mean, group_by_weekday
+from presence_analyzer.utils import jsonify, get_data, mean, \
+    group_by_weekday, group_timepoints_by_weekday
 
 import logging
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -72,4 +74,25 @@ def presence_weekday_view(user_id):
     ]
 
     result.insert(0, ('Weekday', 'Presence (s)'))
+    return result
+
+
+@app.route('/api/v1/presence_start_end/<int:user_id>', methods=['GET'])
+@jsonify
+def presence_start_end(user_id):
+    """
+    Returns timelines of average presence at work for given user
+    """
+    data = get_data()
+    if user_id not in data:
+        log.debug('User %s not found!', user_id)
+        abort(404)
+
+    weekdays = group_timepoints_by_weekday(data[user_id])
+    weekdays = [(mean(x['start']), mean(x['end'])) for x in weekdays]
+
+    result = [
+        (calendar.day_abbr[weekday], tl[0], tl[1])
+        for weekday, tl in enumerate(weekdays)
+    ]
     return result
